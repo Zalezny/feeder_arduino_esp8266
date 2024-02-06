@@ -5,9 +5,15 @@
 
 An Automated Feeder designed for guinea pigs (and adaptable for other animals). It operates using an ESP8266 microcontroller. As part of the project, a rotating screw mechanism was 3D printed to dispense the feed.
 
-## Scheme
-A Project Scheme was designed in Eagle
-![image](https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/b91009fd-f1d9-4dab-a11f-6453561fc0cd)
+## Scheme (Eagle)
+
+![black](https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/5b772d63-75e4-44fe-bfaf-e5e9fa2c05c6)
+
+
+## Board (Eagle)
+
+![board](https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/3195864f-eddc-44bf-b9d3-282b425752e4)
+
 
 ## Parts
 
@@ -18,6 +24,6 @@ A Project Scheme was designed in Eagle
 - Power: Impulse Power Supply 3-12V/1.2A (for this project 5V)
 - Mechanism: Rotating Screw (Printer 3D)
 
-## How it works now
+## How it works 
 
 It is currently functioning without the need for WiFi. The settings have been configured directly (programmatically), but rest assured, the project will receive updates soon.
