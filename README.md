@@ -26,4 +26,10 @@ An Automated Feeder designed for guinea pigs (and adaptable for other animals). 
 
 ## How it works 
 
-It is currently functioning without the need for WiFi. The settings have been configured directly (programmatically), but rest assured, the project will receive updates soon.
+When you connect feeder to power, program will start counting down, and when it reaches zero, feeder will begin dispensing feed.
+
+It is currently functioning without the need for WiFi. The settings have been configured directly (programmatically), but rest assured, the project will receive updates soon...
+
+<img src="https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/17da5cd9-c66c-420f-b6f7-13a72638102a" alt="Pierwszy obraz" style="width: 400px; height: auto;"/>
+<img src="https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/45d54019-48e5-4958-9c4b-2f9915985044" alt="Drugi obraz" style="width: 400px; height: auto;"/>
+<img src="https://github.com/Zalezny/feeder_arduino_esp8266/assets/65240240/edbf91a0-5b47-423f-b33f-0f3e47097460" alt="Drugi obraz" style="width: 400px; height: auto;"/>
