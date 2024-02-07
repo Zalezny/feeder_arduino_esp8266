@@ -13,41 +13,40 @@ RTC_DS1307 DS1307_RTC;
 #define IN3 13
 #define IN4 15
 
-LiquidCrystal_I2C lcd(0x27, 20, 4); 
+LiquidCrystal_I2C lcd(0x27, 20, 4);
 Stepper mojSilnik(32, IN1, IN3, IN2, IN4);
 tmElements_t tm;
 
-int h = 0; 
+int h = 1;
 long m = 0;
 long s = 10;
 long int countdown_time;
 
-void initial(){
-  long currentTime = (tm.Hour*3600L + tm.Minute * 60 + tm.Second);
-  long expectedTime = ((h*3600L) + m*60 + s);
+void initTimer() {
+  long currentTime = (tm.Hour * 3600L + tm.Minute * 60 + tm.Second);
+  long expectedTime = ((h * 3600L) + m * 60 + s);
   countdown_time = expectedTime - currentTime;
+}
+void initFeeder() {
+  if (!DS1307_RTC.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1)
+      ;
+  }
+  DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  initTimer();
+  lcd.begin();
+  lcd.clear();
+  lcd.backlight();
 }
 
 void setup() {
   Serial.begin(9600);
-  
-
 #ifndef ESP8266
-  while (!Serial); // wait for serial port to connect. Needed for native USB
+  while (!Serial);  // wait for serial port to connect. Needed for native USB
 #endif
-
-  if (!DS1307_RTC.begin()) {
-    Serial.println("Couldn't find RTC");
-    while(1);
-  }
-   DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-  initial();
-   lcd.begin();
-   lcd.clear();
-   lcd.backlight();
-  while(!Serial);
- 
+  initFeeder();
+  while (!Serial);
 }
 
 void loop() {
@@ -74,19 +73,18 @@ void loop() {
     }
     lcd.print(countdown_sec);
     if (countdowntime_seconds == 0) {
-       lcd.setCursor(0, 1);
-       lcd.print("");
-       lcd.print("Wydawanie...");
-        mojSilnik.setSpeed(1000);
-        mojSilnik.step(-10240); 
-        lcd.clear();
-        previous = (millis()/1000);
-        initial();
-        digitalWrite(IN1,LOW);
-        digitalWrite(IN2,LOW);
-        digitalWrite(IN3,LOW);
-        digitalWrite(IN4,LOW);
+      lcd.setCursor(0, 1);
+      lcd.print("");
+      lcd.print("Wydawanie...");
+      mojSilnik.setSpeed(1000);
+      mojSilnik.step(-10240);
+      lcd.clear();
+      previous = (millis() / 1000);
+      initTimer();
+      digitalWrite(IN1, LOW);
+      digitalWrite(IN2, LOW);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, LOW);
     }
   }
 }
-
