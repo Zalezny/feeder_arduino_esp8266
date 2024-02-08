@@ -1,8 +1,13 @@
 #include "LiquidCrystal_I2C.h"
+#include "wifi_env.h"
 #include <Wire.h>
 #include <Stepper.h>
 #include <TimeLib.h>
 #include <RTClib.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
+#include <WiFiClient.h>
 
 unsigned long previous = 0;
 
@@ -21,6 +26,9 @@ int h = 1;
 long m = 0;
 long s = 10;
 long int countdown_time;
+
+#define HTTP_REST_PORT 8080
+ESP8266WebServer httpRestServer(HTTP_REST_PORT);
 
 void initTimer() {
   long currentTime = (tm.Hour * 3600L + tm.Minute * 60 + tm.Second);
@@ -42,11 +50,24 @@ void initFeeder() {
 
 void setup() {
   Serial.begin(9600);
+
+  initFeeder();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(OWN_SSID, OWN_PASSWORD);
+  Serial.println("");
+
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(OWN_SSID);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 #ifndef ESP8266
   while (!Serial);  // wait for serial port to connect. Needed for native USB
 #endif
-  initFeeder();
-  while (!Serial);
 }
 
 void loop() {
