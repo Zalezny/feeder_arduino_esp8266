@@ -28,7 +28,7 @@ long s = 10;
 long int countdown_time;
 
 #define HTTP_REST_PORT 8080
-ESP8266WebServer httpRestServer(HTTP_REST_PORT);
+ESP8266WebServer server(HTTP_REST_PORT);
 
 void initTimer() {
   long currentTime = (tm.Hour * 3600L + tm.Minute * 60 + tm.Second);
@@ -38,8 +38,6 @@ void initTimer() {
 void initFeeder() {
   if (!DS1307_RTC.begin()) {
     Serial.println("Couldn't find RTC");
-    while (1)
-      ;
   }
   DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   initTimer();
@@ -48,10 +46,7 @@ void initFeeder() {
   lcd.backlight();
 }
 
-void setup() {
-  Serial.begin(9600);
-
-  initFeeder();
+void initWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(OWN_SSID, OWN_PASSWORD);
   Serial.println("");
@@ -65,12 +60,54 @@ void setup() {
   Serial.println(OWN_SSID);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  
+  if(MDNS.begin("feeder")){
+    Serial.println("MDNS responder started");
+  }
+}
+void getHelloWord() {
+    server.send(200, "text/json", "{\"name\": \"Hello world\"}");
+}
+
+void restServer() {
+  server.on("/", HTTP_GET, [](){
+    server.send(200, F("text/html"), F("Welcome to the Feeder REST"));
+
+  });
+  server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
+}
+
+void handleNotFound() {
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  server.send(404, "text/plain", message);
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  initFeeder();
+  initWiFi();
+  restServer();
+  server.onNotFound(handleNotFound);
+  server.begin();
+  Serial.println("HTTP server started");
 #ifndef ESP8266
   while (!Serial);  // wait for serial port to connect. Needed for native USB
 #endif
 }
 
 void loop() {
+  server.handleClient();
   long countdowntime_seconds = countdown_time - ((millis() / 1000) - previous);
   if (countdowntime_seconds >= 0) {
     long countdown_hour = countdowntime_seconds / 3600;
