@@ -8,6 +8,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiClient.h>
+#include <ArduinoJson.h>
 
 unsigned long previous = 0;
 
@@ -92,6 +93,63 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
+void setTimer(){
+  String postBody = server.arg("plain");
+    Serial.println(postBody);
+ 
+    DynamicJsonDocument doc(512);
+    DeserializationError error = deserializeJson(doc, postBody);
+    if (error) {
+        // if the file didn't open, print an error:
+        Serial.print(F("Error parsing JSON "));
+        Serial.println(error.c_str());
+ 
+        String msg = error.c_str();
+ 
+        server.send(400, F("text/html"),
+                "Error in parsing json body! <br>" + msg);
+ 
+    } else {
+        JsonObject postObj = doc.as<JsonObject>();
+ 
+        Serial.print(F("HTTP Method: "));
+        Serial.println(server.method());
+ 
+        if (server.method() == HTTP_POST) {
+            if (postObj.containsKey("hour") && postObj.containsKey("minutes")&& postObj.containsKey("seconds")) {
+ 
+                Serial.println(F("done."));
+ 
+                // Here store data or doing operation
+ 
+                // Create the response
+                // To get the status of the result you can get the http status so
+                // this part can be unusefully
+                DynamicJsonDocument doc(512);
+                doc["status"] = "OK";
+ 
+                Serial.print(F("Stream..."));
+                String buf;
+                serializeJson(doc, buf);
+ 
+                server.send(201, F("application/json"), buf);
+                Serial.print(F("done."));
+ 
+            }else {
+                DynamicJsonDocument doc(512);
+                doc["status"] = "KO";
+                doc["message"] = F("No data found, or incorrect!");
+ 
+                Serial.print(F("Stream..."));
+                String buf;
+                serializeJson(doc, buf);
+ 
+                server.send(400, F("application/json"), buf);
+                Serial.print(F("done."));
+            }
+        }
+    }
+}
 void setup() {
   Serial.begin(9600);
 
@@ -99,6 +157,7 @@ void setup() {
   initWiFi();
   restServer();
   server.onNotFound(handleNotFound);
+  server.on(F("/setTimer"), HTTP_POST, setTimer);
   server.begin();
   Serial.println("HTTP server started");
 #ifndef ESP8266
