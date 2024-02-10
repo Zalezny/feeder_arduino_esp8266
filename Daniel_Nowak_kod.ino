@@ -37,10 +37,13 @@ void initTimer() {
   countdown_time = expectedTime - currentTime;
 }
 void initFeeder() {
+
   if (!DS1307_RTC.begin()) {
     Serial.println("Couldn't find RTC");
+    // while(1);
   }
   DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
   initTimer();
   lcd.begin();
   lcd.clear();
@@ -76,6 +79,8 @@ void restServer() {
 
   });
   server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
+  server.on(F("/setTimer"), HTTP_POST, setTimer);
+
 }
 
 void handleNotFound() {
@@ -121,7 +126,10 @@ void setTimer(){
                 Serial.println(F("done."));
  
                 // Here store data or doing operation
- 
+                h = postObj["hour"]; 
+                m = postObj["minutes"]; 
+                s = postObj["seconds"]; 
+                initTimer();
                 // Create the response
                 // To get the status of the result you can get the http status so
                 // this part can be unusefully
@@ -157,7 +165,6 @@ void setup() {
   initWiFi();
   restServer();
   server.onNotFound(handleNotFound);
-  server.on(F("/setTimer"), HTTP_POST, setTimer);
   server.begin();
   Serial.println("HTTP server started");
 #ifndef ESP8266
