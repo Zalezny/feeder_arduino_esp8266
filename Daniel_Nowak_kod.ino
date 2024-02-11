@@ -37,13 +37,6 @@ void initTimer() {
   countdown_time = expectedTime - currentTime;
 }
 void initFeeder() {
-
-  if (!DS1307_RTC.begin()) {
-    Serial.println("Couldn't find RTC");
-    // while(1);
-  }
-  DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
   initTimer();
   lcd.begin();
   lcd.clear();
@@ -55,7 +48,7 @@ void initWiFi() {
   WiFi.begin(OWN_SSID, OWN_PASSWORD);
   Serial.println("");
 
-  while(WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
@@ -64,23 +57,21 @@ void initWiFi() {
   Serial.println(OWN_SSID);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  
-  if(MDNS.begin("feeder")){
+
+  if (MDNS.begin("feeder")) {
     Serial.println("MDNS responder started");
   }
 }
 void getHelloWord() {
-    server.send(200, "text/json", "{\"name\": \"Hello world\"}");
+  server.send(200, "text/json", "{\"name\": \"Hello world\"}");
 }
 
 void restServer() {
-  server.on("/", HTTP_GET, [](){
+  server.on("/", HTTP_GET, []() {
     server.send(200, F("text/html"), F("Welcome to the Feeder REST"));
-
   });
   server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
   server.on(F("/setTimer"), HTTP_POST, setTimer);
-
 }
 
 void handleNotFound() {
@@ -98,68 +89,74 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
-void setTimer(){
+void setTimer() {
   String postBody = server.arg("plain");
-    Serial.println(postBody);
- 
-    DynamicJsonDocument doc(512);
-    DeserializationError error = deserializeJson(doc, postBody);
-    if (error) {
-        // if the file didn't open, print an error:
-        Serial.print(F("Error parsing JSON "));
-        Serial.println(error.c_str());
- 
-        String msg = error.c_str();
- 
-        server.send(400, F("text/html"),
+  Serial.println(postBody);
+
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, postBody);
+  if (error) {
+    // if the file didn't open, print an error:
+    Serial.print(F("Error parsing JSON "));
+    Serial.println(error.c_str());
+
+    String msg = error.c_str();
+
+    server.send(400, F("text/html"),
                 "Error in parsing json body! <br>" + msg);
- 
-    } else {
-        JsonObject postObj = doc.as<JsonObject>();
- 
-        Serial.print(F("HTTP Method: "));
-        Serial.println(server.method());
- 
-        if (server.method() == HTTP_POST) {
-            if (postObj.containsKey("hour") && postObj.containsKey("minutes")&& postObj.containsKey("seconds")) {
- 
-                Serial.println(F("done."));
- 
-                // Here store data or doing operation
-                h = postObj["hour"]; 
-                m = postObj["minutes"]; 
-                s = postObj["seconds"]; 
-                initTimer();
-                // Create the response
-                // To get the status of the result you can get the http status so
-                // this part can be unusefully
-                DynamicJsonDocument doc(512);
-                doc["status"] = "OK";
- 
-                Serial.print(F("Stream..."));
-                String buf;
-                serializeJson(doc, buf);
- 
-                server.send(201, F("application/json"), buf);
-                Serial.print(F("done."));
- 
-            }else {
-                DynamicJsonDocument doc(512);
-                doc["status"] = "KO";
-                doc["message"] = F("No data found, or incorrect!");
- 
-                Serial.print(F("Stream..."));
-                String buf;
-                serializeJson(doc, buf);
- 
-                server.send(400, F("application/json"), buf);
-                Serial.print(F("done."));
-            }
-        }
+
+  } else {
+    JsonObject postObj = doc.as<JsonObject>();
+
+    Serial.print(F("HTTP Method: "));
+    Serial.println(server.method());
+
+    if (server.method() == HTTP_POST) {
+      if (postObj.containsKey("hour") && postObj.containsKey("minutes") && postObj.containsKey("seconds")) {
+
+        Serial.println(F("done."));
+
+        // Here store data or doing operation
+        h = (int) postObj["hour"];
+        m = (long) postObj["minutes"];
+        s = (long) postObj["seconds"];
+        initTimer();
+        // Create the response
+        // To get the status of the result you can get the http status so
+        // this part can be unusefully
+        DynamicJsonDocument doc(512);
+        doc["status"] = "OK";
+
+        Serial.print(F("Stream..."));
+        String buf;
+        serializeJson(doc, buf);
+
+        server.send(201, F("application/json"), buf);
+        Serial.print(F("done."));
+
+      } else {
+        DynamicJsonDocument doc(512);
+        doc["status"] = "KO";
+        doc["message"] = F("No data found, or incorrect!");
+
+        Serial.print(F("Stream..."));
+        String buf;
+        serializeJson(doc, buf);
+
+        server.send(400, F("application/json"), buf);
+        Serial.print(F("done."));
+      }
     }
+  }
 }
 void setup() {
   Serial.begin(9600);
+  Wire.begin();
+  if (!DS1307_RTC.begin()) {
+    Serial.println("Couldn't find RTC");
+    // while(1);
+  }
+  DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
   initFeeder();
   initWiFi();
@@ -168,7 +165,8 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
 #ifndef ESP8266
-  while (!Serial);  // wait for serial port to connect. Needed for native USB
+  while (!Serial)
+    ;  // wait for serial port to connect. Needed for native USB
 #endif
 }
 
