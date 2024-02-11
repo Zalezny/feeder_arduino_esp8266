@@ -27,6 +27,7 @@ int h = 1;
 long m = 0;
 long s = 10;
 long int countdown_time;
+bool pause = false;
 
 #define HTTP_REST_PORT 8080
 ESP8266WebServer server(HTTP_REST_PORT);
@@ -72,6 +73,7 @@ void restServer() {
   });
   server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
   server.on(F("/setTimer"), HTTP_POST, setTimer);
+  server.on(F("/setState"), HTTP_POST, setState);
 }
 
 void handleNotFound() {
@@ -89,6 +91,68 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
+void handleIssue() {
+  DynamicJsonDocument doc(512);
+  doc["status"] = "KO";
+  doc["message"] = F("No data found, or incorrect!");
+
+  Serial.print(F("Stream..."));
+  String buf;
+  serializeJson(doc, buf);
+
+  server.send(400, F("application/json"), buf);
+  Serial.print(F("done."));
+}
+
+void handleBodyError(DeserializationError error) {
+  Serial.print(F("Error parsing JSON "));
+  Serial.println(error.c_str());
+
+  String msg = error.c_str();
+
+  server.send(400, F("text/html"),
+              "Error in parsing json body! <br>" + msg);
+}
+
+void setState() {
+  String postBody = server.arg("plain");
+  Serial.println(postBody);
+
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, postBody);
+  if (error) {
+    handleBodyError(error);
+  } else {
+    JsonObject postObj = doc.as<JsonObject>();
+
+    Serial.print(F("HTTP Method: "));
+    Serial.println(server.method());
+
+    if (server.method() == HTTP_POST) {
+      if (postObj.containsKey("pause")) {
+
+        Serial.println(F("done."));
+
+        pause = (bool)postObj["pause"];
+
+
+        DynamicJsonDocument doc(512);
+        doc["status"] = "OK";
+
+        Serial.print(F("Stream..."));
+        String buf;
+        serializeJson(doc, buf);
+
+        server.send(201, F("application/json"), buf);
+        Serial.print(F("done."));
+
+      } else {
+        handleIssue();
+      }
+    }
+  }
+}
+
 void setTimer() {
   String postBody = server.arg("plain");
   Serial.println(postBody);
@@ -96,15 +160,7 @@ void setTimer() {
   DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, postBody);
   if (error) {
-    // if the file didn't open, print an error:
-    Serial.print(F("Error parsing JSON "));
-    Serial.println(error.c_str());
-
-    String msg = error.c_str();
-
-    server.send(400, F("text/html"),
-                "Error in parsing json body! <br>" + msg);
-
+    handleBodyError(error);
   } else {
     JsonObject postObj = doc.as<JsonObject>();
 
@@ -117,9 +173,9 @@ void setTimer() {
         Serial.println(F("done."));
 
         // Here store data or doing operation
-        h = (int) postObj["hour"];
-        m = (long) postObj["minutes"];
-        s = (long) postObj["seconds"];
+        h = (int)postObj["hour"];
+        m = (long)postObj["minutes"];
+        s = (long)postObj["seconds"];
         initTimer();
         // Create the response
         // To get the status of the result you can get the http status so
@@ -135,16 +191,7 @@ void setTimer() {
         Serial.print(F("done."));
 
       } else {
-        DynamicJsonDocument doc(512);
-        doc["status"] = "KO";
-        doc["message"] = F("No data found, or incorrect!");
-
-        Serial.print(F("Stream..."));
-        String buf;
-        serializeJson(doc, buf);
-
-        server.send(400, F("application/json"), buf);
-        Serial.print(F("done."));
+        handleIssue();
       }
     }
   }
@@ -178,7 +225,12 @@ void loop() {
     long countdown_minute = ((countdowntime_seconds / 60) % 60);
     long countdown_sec = countdowntime_seconds % 60;
     lcd.setCursor(0, 0);
-    lcd.print("Czas do wydania: ");
+    if (pause) {
+      lcd.print("Pause na czasie: ");
+
+    } else {
+      lcd.print("Czas do wydania: ");
+    }
     lcd.setCursor(0, 1);
     if (countdown_hour < 10) {
       lcd.print("0");
@@ -201,8 +253,10 @@ void loop() {
       mojSilnik.setSpeed(1000);
       mojSilnik.step(-10240);
       lcd.clear();
-      previous = (millis() / 1000);
-      initTimer();
+      if (!pause) {
+        previous = (millis() / 1000);
+        initTimer();
+      }
       digitalWrite(IN1, LOW);
       digitalWrite(IN2, LOW);
       digitalWrite(IN3, LOW);
