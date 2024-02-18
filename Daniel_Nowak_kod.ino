@@ -27,6 +27,7 @@ int h = 1;
 long m = 0;
 long s = 10;
 long int countdown_time;
+long int break_time;
 bool pause = false;
 
 #define HTTP_REST_PORT 8080
@@ -134,6 +135,7 @@ void setState() {
         Serial.println(F("done."));
 
         pause = (bool)postObj["pause"];
+        Serial.println(pause);
 
 
         DynamicJsonDocument doc(512);
@@ -219,7 +221,15 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  long countdowntime_seconds = countdown_time - ((millis() / 1000) - previous);
+  long countdowntime_seconds;
+
+  if (pause) {
+    countdowntime_seconds = countdown_time - previous;
+  } else {
+    countdowntime_seconds = countdown_time - (millis() / 1000);
+      Serial.println(millis() / 1000);
+
+  }
   if (countdowntime_seconds >= 0) {
     long countdown_hour = countdowntime_seconds / 3600;
     long countdown_minute = ((countdowntime_seconds / 60) % 60);
@@ -253,10 +263,8 @@ void loop() {
       mojSilnik.setSpeed(1000);
       mojSilnik.step(-10240);
       lcd.clear();
-      if (!pause) {
-        previous = (millis() / 1000);
-        initTimer();
-      }
+      previous = (millis() / 1000);
+      initTimer();
       digitalWrite(IN1, LOW);
       digitalWrite(IN2, LOW);
       digitalWrite(IN3, LOW);
